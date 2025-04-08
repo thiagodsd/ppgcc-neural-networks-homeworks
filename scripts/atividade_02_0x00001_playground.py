@@ -56,23 +56,11 @@ class Adaline(Model):
             learning_rate: float = 1e-1,
             epsilon: float = 1e-3,
             num_epochs: int = 100,
-            seed: Optional[int] = 0
+            seed: Optional[int] = 0,
+            batch_mode: Optional[bool] = False,
         ) -> Union[np.ndarray, int, List[float]]:
         """
-        this is the train function required by https://classroom.google.com/u/2/w/Njg4MzMyOTYxNzU0/t/all
-        
-        inputs:
-            X: input data
-            y: target data
-            learning_rate: learning rate
-            num_epochs: number of epochs
-            seed: random seed
-        
-        outputs:
-            weights: np.ndarray
-            epochs: int
-            errors: List[float]
-
+        todo
         """
         np.random.seed(seed)
         n_samples, n_features = x.shape
@@ -83,9 +71,16 @@ class Adaline(Model):
         self.errors.append(E_qm)
         while (self.epoch  < num_epochs):
             E_qm_old = E_qm
-            for i in range(n_samples):
-                u = self.predict_raw(x[i])
-                self.weights += learning_rate * (y[i] - u) * np.insert(x[i], 0, 1.0)
+            if batch_mode:
+                delta_w = np.zeros(n_features + 1)
+                for i in range(n_samples):
+                    u = self.predict_raw(x[i])
+                    delta_w = delta_w + (y[i] - u) * np.insert(x[i], 0, 1.0)
+                self.weights += learning_rate * delta_w
+            else:
+                for i in range(n_samples):
+                    u = self.predict_raw(x[i])
+                    self.weights += learning_rate * (y[i] - u) * np.insert(x[i], 0, 1.0)
             self.epochs += 1
             E_qm = self.mean_square_error(x, y)
             self.errors.append(E_qm)
