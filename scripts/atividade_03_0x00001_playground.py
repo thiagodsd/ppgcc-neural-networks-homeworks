@@ -230,30 +230,45 @@ def evaluate_model(model, dataloader_test, criterion, device='cpu', task='multic
     
     return test_loss, test_acc
 
-def prepare_classification_data(X, y, X_test=None, y_test=None, val_size=0.2, batch_size=32, task='binary', convert_labels=False):
+def prepare_classification_data(X_train, y_train, X_val=None, y_val=None, X_test=None, y_test=None, val_size=0.2, batch_size=32, task='binary', convert_labels=False):
     """
-    `todo`
+    Prepares classification data for PyTorch training.
+    
+    Args:
+        X_train: Training feature data
+        y_train: Training labels
+        X_val: Validation feature data (optional)
+        y_val: Validation labels (optional)
+        X_test: Test feature data (optional)
+        y_test: Test labels (optional)
+        val_size: Validation size if X_val and y_val not provided
+        batch_size: Batch size for DataLoader
+        task: 'binary' or 'multiclass'
+        convert_labels: Whether to convert -1/1 labels to 0/1 for BCE loss
+        
+    Returns:
+        train_loader, val_loader, test_loader
     """
-    # Handle pre-split data
-    if X_test is not None and y_test is not None:
-        # Use pre-split data (train and test are already separate)
-        X_train_val, y_train_val = X, y
-    else:
-        # Split data into train+val and test sets if test data not provided
-        X_train_val, X_test, y_train_val, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
+    # Handle validation split if validation data not provided
+    if X_val is None or y_val is None:
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_train, y_train, 
+            test_size=val_size,
+            random_state=42, 
+            stratify=y_train
         )
     
-    # Split train+val into train and val sets
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_train_val, y_train_val, 
-        test_size=val_size,
-        random_state=42, 
-        stratify=y_train_val
-    )
+    # Handle test split if test data not provided
+    if X_test is None or y_test is None:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_train, y_train, 
+            test_size=0.2,
+            random_state=42, 
+            stratify=y_train
+        )
     
     # Convert -1/1 labels to 0/1 for BCE loss if needed
-    if convert_labels:
+    if convert_labels and task.lower() == 'binary':
         y_train = (y_train == 1).astype(int)  # Convert -1 to 0, keep 1 as 1
         y_val = (y_val == 1).astype(int)
         y_test = (y_test == 1).astype(int)
@@ -293,30 +308,31 @@ def prepare_classification_data(X, y, X_test=None, y_test=None, val_size=0.2, ba
     return train_loader, val_loader, test_loader
 
 
-i = 1
-train = pd.read_csv(f"../data/atividade_01/train_dataset{i}.csv")
-test = pd.read_csv(f"../data/atividade_01/test_dataset{i}.csv")
-display(train.head())
-display(test.head())
+train = pd.read_csv("../data/atividade_03/train_dataset.csv")
+validation = pd.read_csv("../data/atividade_03/validation_dataset.csv")
+test = pd.read_csv("../data/atividade_03/test_dataset.csv")
 
 X_train = train.iloc[:, :-1].values
 y_train = train.iloc[:, -1].values
+X_val = validation.iloc[:, :-1].values
+y_val = validation.iloc[:, -1].values
 X_test = test.iloc[:, :-1].values
 y_test = test.iloc[:, -1].values
 
-
-task = 'binary'
+task = 'multiclass'
 input_features = X_train.shape[1]
 output_size = get_output_size(y_train, task=task)
 
 train_loader, val_loader, test_loader = prepare_classification_data(
     X_train, 
     y_train, 
+    X_val=X_val,
+    y_val=y_val,
     X_test=X_test, 
     y_test=y_test,
     batch_size=32,
     task=task,
-    convert_labels=True  # Convert -1/1 labels to 0/1 for BCE loss
+    convert_labels=True  # Convert -1/1 labels to 0/1 for BCE loss if binary
 )
 
 architecture = [input_features, 64, 16, output_size]
