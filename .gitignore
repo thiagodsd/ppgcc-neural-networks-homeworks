@@ -174,3 +174,7 @@ cython_debug/
 .pypirc
 *.pdf
 *.csv
+data/atividade_04/cifar-10-python.tar.gz
+data/atividade_04/cifar-10-batches-py/**/*
+notebooks/best_model.pth
+notebooks/*.png
